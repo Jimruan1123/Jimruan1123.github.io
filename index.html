@@ -1,69 +1,2392 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ENNOVI 财务 PNL 可视化</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="ENNOVI PNL财务分析与改善模拟工具 - 集成财务指标分析、改善方案规划和效果模拟">
+    <meta name="theme-color" content="#0F0F6D">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="color-scheme" content="light">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <!-- Print styles -->
+    <style media="print">
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            width: 100%;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .simulation-table, .comparison-table {
+            page-break-inside: avoid;
+        }
+
+        .pie-charts-container {
+            page-break-before: always;
+            display: block;
+        }
+
+        .pie-chart-wrapper {
+            width: 100%;
+            page-break-inside: avoid;
+            margin-bottom: 2cm;
+        }
+
+        .improvement-card {
+            page-break-inside: avoid;
+        }
+
+        .button-container, .batch-control {
+            display: none;
+        }
+
+        @media print and (color) {
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+
+    <!-- Accessibility improvements -->
+    <style>
+        *:focus {
+            outline: 3px solid var(--color-tertiary);
+            outline-offset: 2px;
+        }
+
+        .skip-to-main {
+            position: absolute;
+            left: -9999px;
+            z-index: 999;
+            padding: 1em;
+            background-color: white;
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        .skip-to-main:focus {
+            left: 50%;
+            transform: translateX(-50%);
+            top: 0;
+        }
+
+        [role="button"],
+        [role="tab"],
+        [tabindex="0"] {
+            cursor: pointer;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>ENNOVI PNL 分析指导手册</title>
+    <style>
+        /* Mobile optimizations */
+        html {
+            -webkit-overflow-scrolling: touch;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button, input, select {
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        :root {
+            --color-primary: #0F0F6D;
+            --color-secondary: #A100FF;
+            --color-tertiary: #00B5F7;
+            --color-quaternary: #FF4F8F;
+            --color-quinary: #7B61FF;
+            --color-senary: #00D9C5;
+            --color-septenary: #FFB800;
+            --color-octonary: #1CA37D;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1240px) {
+            .container {
+                max-width: 100%;
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .section {
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            .section-title {
+                font-size: 18px;
+            }
+
+            .pie-charts-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .simulation-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .comparison-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .batch-control {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .batch-content,
+            .batch-input-wrapper,
+            .batch-apply {
+                width: 100%;
+            }
+
+            .button-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .simulation-submit,
+            .simulation-reset {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .section-title {
+                font-size: 16px;
+            }
+
+            .section-connection {
+                font-size: 13px;
+            }
+
+            .tree-node {
+                font-size: 14px;
+            }
+
+            .pie-chart-wrapper {
+                padding: 15px;
+            }
+
+            .pie-chart-wrapper canvas {
+                min-height: 300px;
+            }
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .section-title {
+            color: var(--color-primary);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::after {
+            content: "";
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(to right, var(--color-primary), transparent);
+        }
+
+        .section-connection {
+            font-size: 14px;
+            color: #666;
+            margin-top: -15px;
+            margin-bottom: 15px;
+            padding-left: 20px;
+            border-left: 3px solid var(--color-tertiary);
+        }
+
+        /* 树形图样式 */
+        .tree-node {
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 6px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .tree-content {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tree-children {
+            margin-left: 35px;
+            display: none;
+            border-left: 2px solid #e0e0e0;
+            padding-left: 15px;
+        }
+
+        .expanded > .tree-children {
+            display: block;
+        }
+
+        .toggle-btn {
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            background-color: transparent;
+            color: black;
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+            border: 2px solid #333;
+        }
+
+        .node-text {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .node-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .level-1 { background-color: var(--color-primary); color: white; }
+        .level-2 { background-color: var(--color-secondary); color: white; }
+        .level-3 { background-color: var(--color-tertiary); color: white; }
+        .level-4 { background-color: var(--color-quaternary); color: white; }
+        .level-5 { background-color: var(--color-quinary); color: white; }
+        .level-6 { background-color: var(--color-senary); color: white; }
+        .level-7 { background-color: var(--color-septenary); color: white; }
+        .level-8 { background-color: var(--color-octonary); color: white; }
+
+        /* 瀑布图样式 */
+        .waterfall-chart {
+            width: 100%;
+            height: 400px;
+            margin: 20px 0;
+        }
+
+        /* 改善举措卡片样式 */
+        .improvement-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .card-header:hover {
+            background-color: #f8f9fa;
+        }
+
+        .card-header.active {
+            border-left-color: var(--color-primary);
+            background-color: #f0f0f0;
+        }
+
+        .card-header i {
+            width: 24px;
+            text-align: center;
+        }
+
+        .card-content {
+            display: none;
+            padding: 0 15px;
+            background-color: #fff;
+        }
+
+        .card-content.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sub-improvement {
+            margin: 15px 0;
+            padding-left: 34px;
+        }
+
+        .improvement-details {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .improvement-details h4 {
+            margin: 0 0 10px 0;
+            color: var(--color-primary);
+        }
+
+        .improvement-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .effect-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background-color: var(--color-tertiary);
+            color: white;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+
+        .level-title {
+            font-weight: bold;
+            color: var(--color-primary);
+        }
+
+        .reference-link {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            font-size: 12px;
+            color: var(--color-tertiary);
+            text-decoration: none;
+        }
+
+        .reference-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>ENNOVI 财务 PNL 可视化</h1>
-        <div id="logo-watermark"></div>
+    <a href="#main-content" class="skip-to-main">跳至主要内容</a>
+    <header class="header" role="banner">
+        <h1>ENNOVI PNL 分析指导手册</h1>
     </header>
 
-    <main>
-        <section id="cost-structure">
-            <h2>PNL 成本结构分析</h2>
-            <p><strong>总成本</strong>：公司生产和运营的总支出。</p>
-            <p><strong>固定成本</strong>：不随生产量变化的成本，如折旧和间接人工。</p>
-            <p><strong>变动成本</strong>：随生产量变化的成本，如原材料和直接人工。</p>
-            <!-- 树状图 -->
-        </section>
+    <main id="main-content" class="container" role="main">
+        <!-- 模块1：PNL财务结构分解 -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-sitemap"></i>
+                模块1：PNL财务结构分解
+            </h2>
+            <p class="section-connection">
+                此模块展示了完整的财务指标体系，为模块2的数据流动和模块3的改善举措提供基础框架
+            </p>
+            <div id="tree-container" role="tree" aria-label="财务指标结构树"></div>
+        </div>
 
-        <section id="expense-waterfall">
-            <h2>费用增减关系瀑布图</h2>
-            <p><strong>总收入</strong>：公司销售产品和提供服务的总收入。</p>
-            <p><strong>COS (Cost of Sales)</strong>：销售成本，直接生产成本（不含异常损耗）。</p>
-            <p><strong>GMM (Gross Manufacturing Margin)</strong>：总边际贡献，= 总收入 - COS + 废料收入。</p>
-            <p><strong>COPA (Cost of Production Adjusted)</strong>：调整后毛利，= GMM - 包装 - 外包成本。</p>
-            <canvas id="waterfallChart" width="400" height="200"></canvas>
-        </section>
+        <!-- 模块2：PNL瀑布图说明 -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-chart-bar"></i>
+                模块2：PNL瀑布图说明
+            </h2>
+            <p class="section-connection">
+                基于模块1的结构，展示关键财务指标间的量化关系，并与模块3的改善举措直接对应
+            </p>
+            <canvas id="waterfallChart" class="waterfall-chart"></canvas>
+            <a href="#improvement-container" class="reference-link">查看相关改善举措 →</a>
+        </div>
 
-        <section id="factor-dashboard">
-            <h2>关键成本科目因子分析仪表盘</h2>
-            <p><strong>直接人工</strong>：直接参与产品生产的工人的工资和福利。</p>
-            <p><strong>原材料成本</strong>：产品生产过程中使用的原材料的成本。</p>
-            <table>
+        <!-- 模块3：改善各个层级的关键举措 -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-tasks"></i>
+                模块3：改善各个层级的关键举措
+            </h2>
+            <p class="section-connection">
+                针对模块1的结构和模块2的数据表现，提供具体的改善方案和预期效果
+            </p>
+            <div id="improvement-container" role="tablist" aria-label="改善举措列表">
+                <!-- 收入改善 -->
+                <div class="improvement-card">
+                    <div class="card-header" onclick="toggleCard(this)" onkeydown="handleTabKeydown(event)" role="tab" tabindex="0" aria-expanded="false">
+                        <i class="fas fa-dollar-sign"></i>
+                        <span class="level-title">收入改善</span>
+                    </div>
+                    <div class="card-content" role="tabpanel" aria-hidden="true">
+                        <div class="improvement-details">
+                            <h4>总体策略</h4>
+                            <ul class="improvement-list">
+                                <li>开发新市场和客户群</li>
+                                <li>优化产品组合结构</li>
+                                <li>实施动态定价策略</li>
+                            </ul>
+                            <div class="effect-badge">预期效果：提升销售收入10-15%</div>
+                        </div>
+                        <div class="sub-improvement">
+                            <h4>模具收入优化</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>提升模具设计能力</li>
+                                    <li>优化模具制造工艺</li>
+                                    <li>加强模具维护管理</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：提升模具收入8-12%</div>
+                            </div>
+                            <h4>外部零件收入优化</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>扩大市场份额</li>
+                                    <li>开发高附加值产品</li>
+                                    <li>优化客户结构</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：提升零件收入12-15%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GMM改善 -->
+                <div class="improvement-card">
+                    <div class="card-header" onclick="toggleCard(this)" onkeydown="handleTabKeydown(event)" role="tab" tabindex="0" aria-expanded="false">
+                        <i class="fas fa-percentage"></i>
+                        <span class="level-title">GMM改善</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="improvement-details">
+                            <h4>关键举措</h4>
+                            <ul class="improvement-list">
+                                <li>优化产品结构</li>
+                                <li>提升生产效率</li>
+                                <li>降低材料成本</li>
+                            </ul>
+                            <div class="effect-badge">预期效果：提升毛利率2-3%</div>
+                        </div>
+                        <div class="sub-improvement">
+                            <h4>直接材料成本优化</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>供应商整合与谈判</li>
+                                    <li>材料替代优化</li>
+                                    <li>库存管理优化</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：降低材料成本5-8%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COPA改善 -->
+                <div class="improvement-card">
+                    <div class="card-header" onclick="toggleCard(this)" onkeydown="handleTabKeydown(event)" role="tab" tabindex="0" aria-expanded="false">
+                        <i class="fas fa-industry"></i>
+                        <span class="level-title">COPA改善</span>
+                    </div>
+                    <div class="card-content" role="tabpanel">
+                        <div class="improvement-details">
+                            <h4>总体策略</h4>
+                            <ul class="improvement-list">
+                                <li>优化外包管理</li>
+                                <li>提升包装效率</li>
+                                <li>降低外包成本</li>
+                            </ul>
+                            <div class="effect-badge">预期效果：降低COPA成本5-7%</div>
+                        </div>
+                        <div class="sub-improvement">
+                            <h4>外包成本优化</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>供应商评估优化</li>
+                                    <li>外包流程标准化</li>
+                                    <li>外包质量控制</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：降低外包成本5-8%</div>
+                            </div>
+                            <h4>包装成本优化</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>包装设计优化</li>
+                                    <li>包装材料优化</li>
+                                    <li>包装流程改善</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：降低包装成本3-5%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GP改善 -->
+                <div class="improvement-card">
+                    <div class="card-header" onclick="toggleCard(this)" onkeydown="handleTabKeydown(event)" role="tab" tabindex="0" aria-expanded="false">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="level-title">GP改善</span>
+                    </div>
+                    <div class="card-content" role="tabpanel">
+                        <div class="improvement-details">
+                            <h4>总体策略</h4>
+                            <ul class="improvement-list">
+                                <li>提升人工效率</li>
+                                <li>优化间接成本</li>
+                                <li>精简组织结构</li>
+                            </ul>
+                            <div class="effect-badge">预期效果：提升毛利3-5%</div>
+                        </div>
+                        <div class="sub-improvement">
+                            <h4>人工效率提升</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>生产效率提升</li>
+                                    <li>工艺优化改善</li>
+                                    <li>自动化推进</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：提高人效15-20%</div>
+                            </div>
+                            <h4>间接费用优化</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>能源管理优化</li>
+                                    <li>设备维护优化</li>
+                                    <li>产能利用提升</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：降低间接成本12-15%</div>
+                            </div>
+                            <h4>IDL优化</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>流程再造</li>
+                                    <li>组织扁平化</li>
+                                    <li>数字化办公</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：降低IDL成本8-10%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EBITDA改善 -->
+                <div class="improvement-card">
+                    <div class="card-header" onclick="toggleCard(this)" onkeydown="handleTabKeydown(event)" role="tab" tabindex="0" aria-expanded="false">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="level-title">EBITDA改善</span>
+                    </div>
+                    <div class="card-content" role="tabpanel">
+                        <div class="improvement-details">
+                            <h4>总体策略</h4>
+                            <ul class="improvement-list">
+                                <li>优化资产结构</li>
+                                <li>提升运营效率</li>
+                                <li>加强成本管控</li>
+                            </ul>
+                            <div class="effect-badge">预期效果：提升EBITDA 5-8%</div>
+                        </div>
+                        <div class="sub-improvement">
+                            <h4>运营费用优化</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>精简管理层级</li>
+                                    <li>优化业务流程</li>
+                                    <li>推进数字化转型</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：降低运营费用10-12%</div>
+                            </div>
+                            <h4>资产效率提升</h4>
+                            <div class="improvement-details">
+                                <ul class="improvement-list">
+                                    <li>优化资产配置</li>
+                                    <li>提高资产周转</li>
+                                    <li>加强资产管理</li>
+                                </ul>
+                                <div class="effect-badge">预期效果：提升资产收益3-5%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer role="contentinfo" class="footer">
+        <p class="footer-text">© 2025 ENNOVI. PNL分析工具 v1.0</p>
+    </footer>
+
+    <style>
+        .footer {
+            background: var(--color-primary);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+        }
+
+        .footer-text {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        @media print {
+            .footer {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .footer {
+                padding: 15px;
+                font-size: 12px;
+            }
+        }
+    </style>
+
+    <script>
+        // 第一模块：树形结构代码
+        function getNodeLevel(node, level = 1) {
+            node.level = level;
+            if (node.children) {
+                node.children.forEach(child => getNodeLevel(child, level + 1));
+            }
+            return node;
+        }
+
+        const operatingIncome = {
+            text: "营业利润 (Operating Income)",
+            children: [{
+                text: "合并EBITDA (EBITDA Before Corp Charge)",
+                children: [
+                    { text: "摊销 (Amortization)" },
+                    { text: "折旧 (Depreciation)" }
+                ]
+            }]
+        };
+
+        const grossProfit = {
+            text: "毛利 (Gross Profit)",
+            children: [
+                { text: "营业费用 (Operating Expenses)" },
+                { text: "销售与市场费用 (Sales & Marketing)" },
+                { text: "行政管理费用 (General & Administration)" },
+                { text: "研发费用 (Research & Development)" },
+                operatingIncome
+            ]
+        };
+
+        const treeData = getNodeLevel({
+            text: "总收入 (Total Revenue)",
+            children: [
+                { text: "模具收入 (Tooling Revenue)" },
+                {
+                    text: "总收入（不含模具） (Total Revenue (Ex Tooling))",
+                    children: [
+                        {
+                            text: "外部零件收入 (External Parts Revenue)",
+                            children: [
+                                {
+                                    text: "销售成本 (COS)",
+                                    children: [
+                                        { text: "直接材料成本 (Direct Material Costs)" },
+                                        { text: "其他COS成本 (Other COS Costs)" }
+                                    ]
+                                },
+                                {
+                                    text: "总边际贡献 (GMM)",
+                                    children: [
+                                        { text: "包装成本 (Packaging Costs)" },
+                                        { text: "外包成本 (Subcontracting Costs)" },
+                                        {
+                                            text: "COPA",
+                                            children: [
+                                                {
+                                                    text: "直接人工 (Direct Labor)",
+                                                    children: [
+                                                        { text: "生产工人工资 (Production Workers Salary)" },
+                                                        { text: "加班费 (Overtime Pay)" },
+                                                        { text: "奖金与津贴 (Bonuses & Allowances)" },
+                                                        { text: "社会保险费 (Social Insurance)" }
+                                                    ]
+                                                },
+                                                { text: "间接人工 (Indirect Labor)" },
+                                                {
+                                                    text: "间接成本 (Indirect Costs)",
+                                                    children: [
+                                                        {
+                                                            text: "标准间接成本 (Standard Indirect COS)",
+                                                            children: [
+                                                                { text: "设备折旧 (Equipment Depreciation)" },
+                                                                { text: "厂房租金 (Plant Rent)" },
+                                                                { text: "水电费 (Utilities)" },
+                                                                { text: "维修保养 (Maintenance)" }
+                                                            ]
+                                                        },
+                                                        {
+                                                            text: "非标准间接成本 (Non-Standard Indirect COS)",
+                                                            children: [
+                                                                { text: "物料损耗 (Material Wastage)" },
+                                                                { text: "特殊工具费用 (Special Tool Costs)" },
+                                                                { text: "质量成本 (Quality Costs)" },
+                                                                { text: "其他间接费用 (Other Indirect Expenses)" }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                grossProfit
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        { text: "关联交易收入 (Intercompany Revenue)" }
+                    ]
+                }
+            ]
+        });
+
+        function getIconForNode(text) {
+            if (text.includes('收入')) return 'fas fa-dollar-sign';
+            if (text.includes('成本')) return 'fas fa-coins';
+            if (text.includes('利润')) return 'fas fa-chart-line';
+            if (text.includes('费用')) return 'fas fa-file-invoice-dollar';
+            if (text.includes('人工')) return 'fas fa-users';
+            if (text.includes('材料')) return 'fas fa-boxes';
+            if (text.includes('折旧') || text.includes('摊销')) return 'fas fa-chart-area';
+            if (text.includes('税')) return 'fas fa-percentage';
+            return 'fas fa-circle';
+        }
+
+        function createTreeNode(data) {
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = `tree-node level-${Math.min(data.level, 8)}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'tree-content';
+
+            const toggleBtn = document.createElement('span');
+            toggleBtn.className = 'toggle-btn';
+            toggleBtn.textContent = '+';
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'node-text';
+            const icon = document.createElement('i');
+            icon.className = getIconForNode(data.text) + ' node-icon';
+            textSpan.appendChild(icon);
+            
+            const textContent = document.createElement('span');
+            textContent.textContent = data.text;
+            textSpan.appendChild(textContent);
+
+            contentDiv.appendChild(toggleBtn);
+            contentDiv.appendChild(textSpan);
+            nodeDiv.appendChild(contentDiv);
+
+            if (data.children && data.children.length > 0) {
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'tree-children';
+                data.children.forEach(child => {
+                    childrenDiv.appendChild(createTreeNode(child));
+                });
+                nodeDiv.appendChild(childrenDiv);
+
+                contentDiv.addEventListener('click', () => {
+                    nodeDiv.classList.toggle('expanded');
+                    toggleBtn.textContent = nodeDiv.classList.contains('expanded') ? '-' : '+';
+                });
+            }
+
+            return nodeDiv;
+        }
+
+        // 第二模块：瀑布图
+        const waterfallData = {
+            labels: [
+                '总收入 (Revenue)',
+                '直接材料成本 (Direct Material)',
+                '总边际贡献 (GMM)',
+                '包装成本 (Packaging)',
+                '外包成本 (Subcontracting)',
+                'COPA',
+                '直接人工 (Direct Labor)',
+                '间接人工 (Indirect Labor)',
+                '间接成本 (Indirect Costs)',
+                '毛利 (GP)',
+                '营业费用 (Operating Exp)',
+                '销售费用 (S&M)',
+                '管理费用 (G&A)',
+                '研发费用 (R&D)',
+                '营业利润 (Operating Income)',
+                '合并EBITDA'
+            ],
+            datasets: [{
+                data: [1000, -450, 550, -50, -50, 450, -80, -40, -80, 250, -40, -30, -35, -45, 100, 80],
+                backgroundColor: [
+                    'rgba(15, 15, 109, 0.8)',    // 深蓝 - 收入
+                    'rgba(161, 0, 255, 0.8)',    // 紫色 - 材料成本
+                    'rgba(0, 181, 247, 0.8)',    // 浅蓝 - GMM
+                    'rgba(255, 79, 143, 0.8)',   // 粉色 - Packaging
+                    'rgba(123, 97, 255, 0.8)',   // 紫罗兰 - Subcontracting
+                    'rgba(0, 217, 197, 0.8)',    // 青色 - COPA
+                    'rgba(255, 184, 0, 0.8)',    // 金色 - Direct Labor
+                    'rgba(28, 163, 125, 0.8)',   // 绿色 - Indirect Labor
+                    'rgba(15, 15, 109, 0.8)',    // 深蓝 - Indirect Costs
+                    'rgba(161, 0, 255, 0.8)',    // 紫色 - GP
+                    'rgba(0, 181, 247, 0.8)',    // 浅蓝 - Operating Exp
+                    'rgba(255, 79, 143, 0.8)',   // 粉色 - S&M
+                    'rgba(123, 97, 255, 0.8)',   // 紫罗兰 - G&A
+                    'rgba(0, 217, 197, 0.8)',    // 青色 - R&D
+                    'rgba(255, 184, 0, 0.8)',    // 金色 - Operating Income
+                    'rgba(28, 163, 125, 0.8)'    // 绿色 - EBITDA
+                ],
+                borderColor: Array(16).fill('rgba(255, 255, 255, 1)'),
+                borderWidth: 1
+            }]
+        };
+
+        const waterfallCtx = document.getElementById('waterfallChart').getContext('2d');
+        new Chart(waterfallCtx, {
+            type: 'bar',
+            data: waterfallData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '金额 (百万元)'
+                        },
+                        grid: {
+                            drawBorder: true,
+                            color: function(context) {
+                                if (context.tick.value === 550) return 'rgba(0, 181, 247, 0.5)';  // GMM
+                                if (context.tick.value === 450) return 'rgba(0, 217, 197, 0.5)';  // COPA
+                                if (context.tick.value === 250) return 'rgba(161, 0, 255, 0.5)';  // GP
+                                if (context.tick.value === 100) return 'rgba(255, 184, 0, 0.5)';  // Operating Income
+                                if (context.tick.value === 80) return 'rgba(28, 163, 125, 0.5)';  // EBITDA
+                                return 'rgba(0, 0, 0, 0.1)';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '2024财年PNL瀑布图分析',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // 第三模块：改善举措卡片交互
+        function toggleCard(header) {
+            const content = header.nextElementSibling;
+            const isExpanding = !content.classList.contains('active');
+            
+            // 关闭其他展开的卡片
+            document.querySelectorAll('.card-content.active').forEach(activeContent => {
+                if (activeContent !== content) {
+                    activeContent.classList.remove('active');
+                    activeContent.previousElementSibling.classList.remove('active');
+                    // Update ARIA states
+                    activeContent.setAttribute('aria-hidden', 'true');
+                    activeContent.previousElementSibling.setAttribute('aria-expanded', 'false');
+                }
+            });
+            
+            // 切换当前卡片
+            content.classList.toggle('active');
+            header.classList.toggle('active');
+            
+            // Update ARIA states
+            content.setAttribute('aria-hidden', !isExpanding);
+            header.setAttribute('aria-expanded', isExpanding);
+            
+            // 如果是展开操作，滚动到可见区域
+            if (isExpanding) {
+                header.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // Set focus to the header for better keyboard navigation
+                header.focus();
+            }
+        }
+
+        // Keyboard navigation handler for tabs
+        function handleTabKeydown(event) {
+            const header = event.target;
+            const tablist = header.closest('[role="tablist"]');
+            const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+            const currentIndex = tabs.indexOf(header);
+
+            let nextTab;
+            switch (event.key) {
+                case 'ArrowDown':
+                case 'ArrowRight':
+                    event.preventDefault();
+                    nextTab = tabs[currentIndex + 1] || tabs[0];
+                    break;
+                case 'ArrowUp':
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    nextTab = tabs[currentIndex - 1] || tabs[tabs.length - 1];
+                    break;
+                case 'Home':
+                    event.preventDefault();
+                    nextTab = tabs[0];
+                    break;
+                case 'End':
+                    event.preventDefault();
+                    nextTab = tabs[tabs.length - 1];
+                    break;
+                case 'Enter':
+                case ' ':
+                    event.preventDefault();
+                    toggleCard(header);
+                    return;
+            }
+
+            if (nextTab) {
+                nextTab.focus();
+            }
+        }
+
+        // 第四模块：改善模拟
+        const simulationData = {
+            labels: waterfallData.labels,
+            baseValues: waterfallData.datasets[0].data,
+            maxPercentages: [20, 8, 5, 5, 5, 10, 15, 10, 12, 8, 10, 8, 8, 10, 8, 5],
+            colors: waterfallData.datasets[0].backgroundColor
+        };
+
+            function createSimulationTable() {
+                const container = document.createElement('div');
+                container.className = 'simulation-table-container';
+
+                // 添加批量调整控制
+                const batchControl = document.createElement('div');
+                batchControl.className = 'batch-control';
+                
+                const batchHeader = document.createElement('div');
+                batchHeader.className = 'batch-header';
+                
+                const batchIcon = document.createElement('i');
+                batchIcon.className = 'fas fa-percentage';
+                
+                const batchLabel = document.createElement('label');
+                batchLabel.textContent = '批量调整';
+                
+                const batchHelp = document.createElement('div');
+                batchHelp.className = 'batch-help';
+                batchHelp.innerHTML = '批量更新所有可调整项的改善百分比，以快速模拟整体改善效果';
+                
+                batchHeader.appendChild(batchIcon);
+                batchHeader.appendChild(batchLabel);
+                batchHeader.appendChild(batchHelp);
+                
+                const batchInput = document.createElement('input');
+                batchInput.type = 'number';
+                batchInput.min = '0';
+                batchInput.step = '0.1';
+                batchInput.className = 'batch-input';
+                batchInput.placeholder = '输入改善百分比 (0-20%)';
+                batchInput.title = '建议输入0-20%之间的值';
+                
+                // 添加输入验证
+                batchInput.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    if (isNaN(value)) {
+                        e.target.setCustomValidity('');
+                    } else if (value < 0) {
+                        e.target.setCustomValidity('改善百分比不能为负数');
+                    } else if (value > 20) {
+                        e.target.setCustomValidity('建议改善百分比不超过20%');
+                    } else {
+                        e.target.setCustomValidity('');
+                    }
+                    e.target.reportValidity();
+                });
+                
+                const batchButton = document.createElement('button');
+                batchButton.innerHTML = '<i class="fas fa-magic"></i> 应用到所有可调整项';
+                batchButton.className = 'batch-apply';
+                batchButton.title = '点击将应用当前百分比到所有可调整的指标';
+                batchButton.onclick = () => {
+                    const value = parseFloat(batchInput.value);
+                    if (!isNaN(value) && value >= 0 && value <= 20) {
+                        document.querySelectorAll('.simulation-table input[type="number"]').forEach(input => {
+                            input.value = value;
+                            input.dispatchEvent(new Event('input'));
+                        });
+                        // 添加应用成功的视觉反馈
+                        batchButton.classList.add('success');
+                        setTimeout(() => batchButton.classList.remove('success'), 1000);
+                    } else {
+                        batchInput.reportValidity();
+                    }
+                };
+                
+                // Create title group
+                const batchTitle = document.createElement('div');
+                batchTitle.className = 'batch-title';
+                batchTitle.appendChild(batchIcon);
+                batchTitle.appendChild(batchLabel);
+                
+                const batchContent = document.createElement('div');
+                batchContent.className = 'batch-content';
+                batchContent.appendChild(batchTitle);
+                batchContent.appendChild(batchHelp);
+
+                // Create input wrapper
+                const batchInputWrapper = document.createElement('div');
+                batchInputWrapper.className = 'batch-input-wrapper';
+                batchInputWrapper.appendChild(batchInput);
+
+                // Add all elements to control container
+                batchControl.appendChild(batchContent);
+                batchControl.appendChild(batchInputWrapper);
+                batchControl.appendChild(batchButton);
+                container.appendChild(batchControl);
+                
+                const table = document.createElement('table');
+                table.className = 'simulation-table';
+
+                // 添加批量调整控制样式
+                const batchStyle = document.createElement('style');
+                batchStyle.textContent = `
+                    .batch-control {
+                        margin-bottom: 20px;
+                        padding: 20px;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        border: 2px solid #eee;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                        display: flex;
+                        flex-direction: column;
+                        gap: 15px;
+                    }
+
+                    @media (min-width: 768px) {
+                        .batch-control {
+                            flex-direction: row;
+                            align-items: center;
+                            justify-content: space-between;
+                        }
+
+                        .batch-content {
+                            flex: 2;
+                        }
+
+                        .batch-input-wrapper,
+                        .batch-apply {
+                            flex: 1;
+                        }
+                    }
+
+                    .batch-header {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        gap: 12px;
+                        padding-bottom: 15px;
+                        border-bottom: 1px solid #eee;
+                    }
+
+                    @media (min-width: 768px) {
+                        .batch-header {
+                            padding-bottom: 0;
+                            border-bottom: none;
+                            margin-bottom: 0;
+                        }
+                    }
+
+                    .batch-title {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        min-width: 120px;
+                    }
+
+                    .batch-help {
+                        position: relative;
+                        padding: 8px 12px 8px 32px;
+                        font-size: 14px;
+                        color: #666;
+                        line-height: 1.5;
+                        flex: 1;
+                        background: rgba(0, 181, 247, 0.05);
+                        border-radius: 6px;
+                        border-left: 3px solid var(--color-tertiary);
+                    }
+
+                    .batch-help::before {
+                        content: "💡";
+                        position: absolute;
+                        left: 8px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        font-size: 16px;
+                    }
+
+                    @media (max-width: 767px) {
+                        .batch-help {
+                            margin: 8px 0;
+                            padding: 12px 12px 12px 36px;
+                        }
+                    }
+
+                    .batch-input-wrapper {
+                        position: relative;
+                        width: 100%;
+                    }
+
+                    @media (min-width: 768px) {
+                        .batch-input-wrapper {
+                            width: auto;
+                        }
+                    }
+
+                    .batch-input {
+                        width: 100%;
+                        max-width: 180px;
+                    }
+
+                    .batch-apply {
+                        width: 100%;
+                        justify-content: center;
+                    }
+
+                    @media (min-width: 768px) {
+                        .batch-apply {
+                            width: auto;
+                        }
+                    }
+
+                    .batch-header i {
+                        font-size: 20px;
+                        color: var(--color-primary);
+                    }
+
+                    .batch-header label {
+                        font-size: 16px;
+                        font-weight: bold;
+                        color: var(--color-primary);
+                    }
+
+                    .batch-help {
+                        font-size: 14px;
+                        color: #666;
+                        margin-left: auto;
+                        max-width: 300px;
+                        line-height: 1.4;
+                    }
+
+                    .batch-input {
+                        padding: 12px 15px;
+                        border: 2px solid #e0e0e0;
+                        border-radius: 8px;
+                        width: 180px;
+                        font-family: 'Consolas', monospace;
+                        font-size: 14px;
+                        color: #333;
+                        background: white;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    }
+
+                    .batch-input:hover {
+                        border-color: var(--color-tertiary);
+                    }
+
+                    .batch-input:focus {
+                        outline: none;
+                        border-color: var(--color-tertiary);
+                        box-shadow: 0 0 0 3px rgba(0, 181, 247, 0.1);
+                    }
+
+                    .batch-input:invalid {
+                        border-color: #F44336;
+                        background-color: rgba(244, 67, 54, 0.03);
+                        box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+                    }
+
+                    .batch-input::placeholder {
+                        color: #999;
+                        font-style: italic;
+                    }
+
+                    .batch-apply {
+                        padding: 12px 24px;
+                        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        font-size: 14px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+
+                    .batch-apply i {
+                        font-size: 16px;
+                        transition: transform 0.3s ease;
+                    }
+
+                    .batch-apply:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+                    }
+
+                    .batch-apply:hover i {
+                        transform: rotate(180deg);
+                    }
+
+                    .batch-apply:active {
+                        transform: translateY(0);
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+
+                    .batch-apply.success {
+                        background: linear-gradient(135deg, #4CAF50, #45a049);
+                        animation: success-pulse 1s ease;
+                    }
+
+                    .batch-apply:disabled {
+                        background: #e0e0e0;
+                        cursor: not-allowed;
+                        transform: none;
+                        box-shadow: none;
+                    }
+
+                    @keyframes success-pulse {
+                        0% { transform: scale(1); }
+                        50% { transform: scale(1.05); }
+                        100% { transform: scale(1); }
+                    }
+                `;
+                document.head.appendChild(batchStyle);
+
+            // 表头
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            ['指标', '原始数值', '改善百分比', '模拟结果'].forEach(text => {
+                const th = document.createElement('th');
+                th.textContent = text;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // 表体
+            const tbody = document.createElement('tbody');
+            simulationData.labels.forEach((label, index) => {
+                const tr = document.createElement('tr');
+                
+                // 指标名称
+                const labelCell = document.createElement('td');
+                labelCell.textContent = label;
+                tr.appendChild(labelCell);
+
+                // 原始数值
+                const baseValueCell = document.createElement('td');
+                baseValueCell.textContent = simulationData.baseValues[index];
+                baseValueCell.className = 'base-value';
+                tr.appendChild(baseValueCell);
+
+                // 改善百分比输入或显示
+                const inputCell = document.createElement('td');
+                const inputWrapper = document.createElement('div');
+                inputWrapper.className = 'input-wrapper';
+
+                // 检查是否是不可输入的指标
+                const nonEditableItems = ['GMM', 'COPA', 'GP', '营业利润', 'EBITDA'];
+                const isNonEditable = nonEditableItems.some(item => label.includes(item));
+
+                if (isNonEditable) {
+                    // 对于不可编辑项，创建显示百分比的span
+                    const percentageSpan = document.createElement('span');
+                    percentageSpan.className = 'percentage-display';
+                    percentageSpan.textContent = '0.00%';
+                    inputWrapper.appendChild(percentageSpan);
+                } else {
+                    // 对于可编辑项，创建输入框
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = '0';
+                    input.step = '0.1';
+                    input.placeholder = `建议不超过 ${simulationData.maxPercentages[index]}%`;
+                    input.dataset.index = index;
+                    input.style.color = '#666';
+                    input.addEventListener('input', updateSimulationResults);
+                    inputWrapper.appendChild(input);
+                }
+                inputCell.appendChild(inputWrapper);
+                tr.appendChild(inputCell);
+
+                // 模拟结果
+                const resultCell = document.createElement('td');
+                resultCell.className = 'simulation-result';
+                resultCell.textContent = simulationData.baseValues[index];
+                tr.appendChild(resultCell);
+
+                // 设置正数值行的特殊样式
+                if (simulationData.baseValues[index] > 0) {
+                    tr.classList.add('positive-value');
+                }
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            container.appendChild(table);
+
+            // 添加数据对比表格区域
+            const dataComparisonDiv = document.createElement('div');
+            dataComparisonDiv.className = 'data-comparison-section';
+            
+            const comparisonTableTitle = document.createElement('h3');
+            comparisonTableTitle.textContent = '数据对比分析';
+            comparisonTableTitle.className = 'comparison-title';
+            dataComparisonDiv.appendChild(comparisonTableTitle);
+
+            const comparisonTable = document.createElement('table');
+            comparisonTable.className = 'comparison-table';
+            comparisonTable.innerHTML = `
                 <thead>
                     <tr>
-                        <th>成本科目</th>
-                        <th>主要驱动因子</th>
-                        <th>行业基准对比</th>
+                        <th>指标</th>
+                        <th>改善前数值</th>
+                        <th>改善前占比</th>
+                        <th>改善后数值</th>
+                        <th>改善后占比</th>
+                        <th>变化幅度</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>直接人工</td>
-                        <td>工时利用率/自动化水平</td>
-                        <td>▲优于同行20%</td>
-                    </tr>
-                    <tr>
-                        <td>原材料成本</td>
-                        <td>钢材价格指数/废品率</td>
-                        <td>▼高同行5%</td>
-                    </tr>
+                    ${simulationData.labels.filter((_, i) => simulationData.baseValues[i] > 0)
+                        .map((label, i) => {
+                            const value = simulationData.baseValues[i];
+                            const total = simulationData.baseValues
+                                .filter(v => v > 0)
+                                .reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `
+                                <tr>
+                                    <td>${label}</td>
+                                    <td class="value">${value}</td>
+                                    <td class="percentage">${percentage}%</td>
+                                    <td class="value">-</td>
+                                    <td class="percentage">-</td>
+                                    <td class="percentage">-</td>
+                                </tr>
+                            `;
+                        }).join('')}
                 </tbody>
-            </table>
-        </section>
-    </main>
+            `;
 
-    <footer>
-        <p>&copy; 2025 ENNOVI</p>
-    </footer>
+            // 添加按钮
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'button-container';
+            
+            const submitButton = document.createElement('button');
+            submitButton.className = 'simulation-submit';
+            submitButton.onclick = updateCharts;
+            submitButton.innerHTML = '<i class="fas fa-chart-pie"></i> 提交模拟结果';
+            submitButton.title = '生成改善效果对比分析';
+            buttonContainer.appendChild(submitButton);
 
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script.js"></script>
+            const resetButton = document.createElement('button');
+            resetButton.className = 'simulation-reset';
+            resetButton.onclick = resetSimulation;
+            resetButton.innerHTML = '<i class="fas fa-undo"></i> 重置';
+            resetButton.title = '重置所有改善百分比';
+            buttonContainer.appendChild(resetButton);
+
+            container.appendChild(buttonContainer);
+
+            // 添加饼图容器
+            const chartsContainer = document.createElement('div');
+            chartsContainer.className = 'pie-charts-container';
+            
+            // Before饼图容器
+            const beforeWrapper = document.createElement('div');
+            beforeWrapper.className = 'pie-chart-wrapper';
+            const beforeCanvas = document.createElement('canvas');
+            beforeCanvas.id = 'beforePieChart';
+            beforeWrapper.appendChild(beforeCanvas);
+            
+            // After饼图容器
+            const afterWrapper = document.createElement('div');
+            afterWrapper.className = 'pie-chart-wrapper';
+            const afterCanvas = document.createElement('canvas');
+            afterCanvas.id = 'afterPieChart';
+            afterWrapper.appendChild(afterCanvas);
+            
+            chartsContainer.appendChild(beforeWrapper);
+            chartsContainer.appendChild(afterWrapper);
+            dataComparisonDiv.appendChild(chartsContainer);
+            
+            // 添加到主容器
+            container.appendChild(dataComparisonDiv);
+
+            return container;
+        }
+
+            function validatePercentage(input, suggestedMax) {
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    input.setCustomValidity('');
+                    input.classList.remove('exceeds-suggestion');
+                    return true;
+                }
+                
+                if (value < 0) {
+                    input.setCustomValidity('改善百分比不能为负数');
+                    input.classList.remove('exceeds-suggestion');
+                    return false;
+                }
+                
+                // Remove strict validation, just show warning styling if exceeds suggestion
+                if (value > suggestedMax) {
+                    input.classList.add('exceeds-suggestion');
+                } else {
+                    input.classList.remove('exceeds-suggestion');
+                }
+                
+                input.setCustomValidity('');
+                return true;
+            }
+
+            function updateSimulationResults(e) {
+                const input = e.target;
+                const index = input.dataset.index;
+                const maxPercentage = simulationData.maxPercentages[index];
+                
+                // 验证输入值
+                const isValid = validatePercentage(input, maxPercentage);
+                if (!isValid) {
+                    input.reportValidity();
+                    return;
+                }
+
+                const baseValue = simulationData.baseValues[index];
+                const percentage = parseFloat(input.value) || 0;
+
+                // 计算当前项的改变值
+                let result;
+                if (baseValue < 0) {
+                    result = baseValue * (1 - percentage / 100);
+                } else {
+                    result = baseValue * (1 + percentage / 100);
+                }
+                
+                // 更新当前单元格结果
+                const resultCell = input.closest('tr').querySelector('.simulation-result');
+                resultCell.textContent = result.toFixed(2);
+
+                // 更新改善效果样式
+                const row = input.closest('tr');
+                const change = ((result - baseValue) / Math.abs(baseValue) * 100);
+                row.setAttribute('data-improvement', change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral');
+
+                // 更新所有汇总指标
+                updateAggregateIndicators();
+
+                // 更新数据对比表格和图表
+                updateComparisonTable();
+            }
+
+            // 添加改善效果样式
+            const improvementStyle = document.createElement('style');
+            improvementStyle.textContent = `
+                .simulation-table tr[data-improvement="positive"] {
+                    background-color: rgba(76, 175, 80, 0.05);
+                }
+
+                .simulation-table tr[data-improvement="positive"]:hover {
+                    background-color: rgba(76, 175, 80, 0.1);
+                }
+
+                .simulation-table tr[data-improvement="negative"] {
+                    background-color: rgba(244, 67, 54, 0.05);
+                }
+
+                .simulation-table tr[data-improvement="negative"]:hover {
+                    background-color: rgba(244, 67, 54, 0.1);
+                }
+
+                .simulation-table input:invalid {
+                    border-color: #F44336;
+                }
+
+                .simulation-table input.exceeds-suggestion {
+                    border-color: #FFB800;
+                    background-color: rgba(255, 184, 0, 0.05);
+                }
+
+                .simulation-table input.exceeds-suggestion:focus {
+                    box-shadow: 0 0 0 3px rgba(255, 184, 0, 0.1);
+                }
+
+                .simulation-table input.exceeds-suggestion::after {
+                    content: "⚠️";
+                    position: absolute;
+                    right: -24px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 16px;
+                }
+
+                .simulation-table .input-wrapper[data-suggestion]::after {
+                    content: attr(data-suggestion);
+                    position: absolute;
+                    right: -80px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 12px;
+                    color: #666;
+                    white-space: nowrap;
+                }
+            `;
+            document.head.appendChild(improvementStyle);
+
+            function updateAggregateIndicators() {
+                const gmmIndex = simulationData.labels.findIndex(l => l.includes('GMM'));
+                const copaIndex = simulationData.labels.findIndex(l => l.includes('COPA'));
+                const gpIndex = simulationData.labels.findIndex(l => l.includes('毛利'));
+                const operatingIncomeIndex = simulationData.labels.findIndex(l => l.includes('营业利润'));
+                const ebitdaIndex = simulationData.labels.findIndex(l => l.includes('EBITDA'));
+
+                const resultCells = document.querySelectorAll('.simulation-result');
+                const baseValues = simulationData.baseValues;
+
+                // 获取收入和成本数据
+                const totalRevenue = parseFloat(resultCells[0].textContent); // 总收入
+                const materialCost = parseFloat(resultCells[1].textContent); // 直接材料成本
+                
+                // 计算GMM (总收入 + 直接材料成本，因为成本是负值)
+                const gmmValue = totalRevenue + materialCost;
+                resultCells[gmmIndex].textContent = gmmValue.toFixed(2);
+
+                // 获取包装和外包成本
+                const packagingCost = parseFloat(resultCells[3].textContent); // 包装成本
+                const subcontractingCost = parseFloat(resultCells[4].textContent); // 外包成本
+                
+                // 计算COPA (GMM + 包装成本 + 外包成本，都是负值)
+                const copaValue = gmmValue + packagingCost + subcontractingCost;
+                resultCells[copaIndex].textContent = copaValue.toFixed(2);
+
+                // 获取人工和间接成本
+                const directLabor = parseFloat(resultCells[6].textContent); // 直接人工
+                const indirectLabor = parseFloat(resultCells[7].textContent); // 间接人工
+                const indirectCosts = parseFloat(resultCells[8].textContent); // 间接成本
+                
+                // 计算GP (COPA + 所有成本项，都是负值)
+                const gpValue = copaValue + directLabor + indirectLabor + indirectCosts;
+                resultCells[gpIndex].textContent = gpValue.toFixed(2);
+
+
+                // 获取运营相关费用
+                const operatingExp = parseFloat(resultCells[10].textContent);  // 营业费用
+                const salesExp = parseFloat(resultCells[11].textContent);      // 销售费用
+                const gaExp = parseFloat(resultCells[12].textContent);         // 管理费用
+                const rdExp = parseFloat(resultCells[13].textContent);         // 研发费用
+
+                // 计算营业利润 (GP + 所有费用项)
+                const operatingIncome = gpValue + operatingExp + salesExp + gaExp + rdExp;
+                resultCells[operatingIncomeIndex].textContent = operatingIncome.toFixed(2);
+
+                // 计算EBITDA的变化值：等于营业利润的变化值
+                const operatingIncomeChange = operatingIncome - baseValues[operatingIncomeIndex];
+                // EBITDA最终值 = EBITDA原值 + 营业利润的变化值
+                const ebitdaValue = baseValues[ebitdaIndex] + operatingIncomeChange;
+                resultCells[ebitdaIndex].textContent = ebitdaValue.toFixed(2);
+
+                // 更新汇总指标的改善百分比显示
+                const percentageDisplays = document.querySelectorAll('.percentage-display');
+                const indicators = [
+                    { index: gmmIndex, label: 'GMM' },
+                    { index: copaIndex, label: 'COPA' },
+                    { index: gpIndex, label: 'GP' },
+                    { index: operatingIncomeIndex, label: 'Operating Income' },
+                    { index: ebitdaIndex, label: 'EBITDA' }
+                ];
+
+                indicators.forEach((indicator, i) => {
+                    const originalValue = baseValues[indicator.index];
+                    const currentValue = parseFloat(resultCells[indicator.index].textContent);
+                    const changePercentage = ((currentValue - originalValue) / Math.abs(originalValue) * 100).toFixed(2);
+                    const percentageSpan = percentageDisplays[i];
+                    
+                    // 更新显示
+                    percentageSpan.textContent = (changePercentage > 0 ? '+' : '') + changePercentage + '%';
+                    percentageSpan.setAttribute('data-positive', changePercentage > 0);
+                    
+                    // 添加指标名称提示
+                    percentageSpan.title = `${indicator.label} 改善幅度`;
+                });
+            }
+
+            function updateComparisonTable() {
+                const results = getSimulationResults();
+                const positiveResults = results.filter(v => v > 0);
+                const totalAfter = positiveResults.reduce((a, b) => a + b, 0);
+                
+                // 获取所有正数值的原始数据行
+                const comparisonRows = document.querySelectorAll('.comparison-table tbody tr');
+                let currentIndex = 0;
+                
+                results.forEach((value, index) => {
+                    if (value > 0) {
+                        const row = comparisonRows[currentIndex];
+                        if (row) {
+                            const baseValue = simulationData.baseValues[index];
+                            const totalBefore = simulationData.baseValues
+                                .filter(v => v > 0)
+                                .reduce((a, b) => a + b, 0);
+                            
+                            const beforePercentage = ((baseValue / totalBefore) * 100).toFixed(1);
+                            const afterPercentage = ((value / totalAfter) * 100).toFixed(1);
+                            const change = ((value - baseValue) / baseValue * 100).toFixed(1);
+                            
+                            // 更新表格单元格
+                            row.children[3].textContent = value.toFixed(2); // 改善后数值
+                            row.children[4].textContent = afterPercentage + '%'; // 改善后占比
+                            
+                            const changeText = (change > 0 ? '+' : '') + change + '%';
+                            const changeCell = row.children[5];
+                            changeCell.textContent = changeText;
+                            changeCell.setAttribute('data-change', changeText);
+                        }
+                        currentIndex++;
+                    }
+                });
+            }
+
+        function getSimulationResults() {
+            const results = [];
+            document.querySelectorAll('.simulation-result').forEach(cell => {
+                results.push(parseFloat(cell.textContent));
+            });
+            return results;
+        }
+
+        let beforePieChart = null;
+        let afterPieChart = null;
+
+            function resetSimulation() {
+                // 重置所有输入框
+                document.querySelectorAll('.simulation-table input').forEach(input => {
+                    input.value = '';
+                    input.setCustomValidity(''); // 清除验证状态
+                    input.closest('tr').removeAttribute('data-improvement'); // 移除改善效果样式
+                });
+
+                // 重置批量调整输入
+                const batchInput = document.querySelector('.batch-input');
+                batchInput.value = '';
+                batchInput.setCustomValidity('');
+
+                // 重置所有结果单元格
+                document.querySelectorAll('.simulation-result').forEach((cell, index) => {
+                    cell.textContent = simulationData.baseValues[index];
+                });
+                
+                // 重置所有百分比显示
+                document.querySelectorAll('.percentage-display').forEach(span => {
+                    span.textContent = '0.00%';
+                    span.removeAttribute('data-positive');
+                    span.title = ''; // 清除提示文本
+                });
+                
+                // 重置对比表格数据和动画
+                const comparisonRows = document.querySelectorAll('.comparison-table tbody tr');
+                comparisonRows.forEach(row => {
+                    const baseValue = parseFloat(row.children[1].textContent);
+                    row.children[3].textContent = baseValue.toFixed(2);
+                    row.children[4].textContent = row.children[2].textContent;
+                    
+                    const changeCell = row.children[5];
+                    changeCell.textContent = '0.0%';
+                    changeCell.removeAttribute('data-change');
+                    
+                    // 移除所有动画相关的类
+                    row.classList.remove('highlight-positive', 'highlight-negative');
+                });
+                
+                // 重置图表
+                updateCharts();
+                
+                // 显示重置完成的反馈
+                const resetButton = document.querySelector('.simulation-reset');
+                resetButton.classList.add('button-flash');
+                setTimeout(() => resetButton.classList.remove('button-flash'), 500);
+            }
+
+            // 添加百分比显示样式
+            const percentageStyle = document.createElement('style');
+            percentageStyle.textContent = `
+                .percentage-display {
+                    display: inline-block;
+                    padding: 6px 12px;
+                    border: 2px solid transparent;
+                    border-radius: 4px;
+                    background-color: #f8f9fa;
+                    font-family: 'Consolas', monospace;
+                    text-align: right;
+                    width: 100px;
+                    transition: all 0.3s ease;
+                }
+
+                .percentage-display[data-positive="true"] {
+                    color: #4CAF50;
+                    border-color: rgba(76, 175, 80, 0.2);
+                }
+
+                .percentage-display[data-positive="false"] {
+                    color: #F44336;
+                    border-color: rgba(244, 67, 54, 0.2);
+                }
+            `;
+            document.head.appendChild(percentageStyle);
+
+        function updateCharts() {
+            // 处理饼图数据：使用成本和费用的绝对值加上营业利润
+            function processChartData(values) {
+                const processedData = [];
+                const processedLabels = [];
+                const processedColors = [];
+                
+                values.forEach((value, index) => {
+                    // 筛选出成本、费用（负值）和营业利润
+                    if (value < 0 || simulationData.labels[index].includes('营业利润')) {
+                        processedData.push(Math.abs(value));
+                        processedLabels.push(simulationData.labels[index]);
+                        processedColors.push(simulationData.colors[index]);
+                    }
+                });
+                return { data: processedData, labels: processedLabels, colors: processedColors };
+            }
+
+            const beforeResults = processChartData(simulationData.baseValues);
+            const afterResults = processChartData(getSimulationResults());
+
+            if (beforePieChart) beforePieChart.destroy();
+            if (afterPieChart) afterPieChart.destroy();
+
+            const pieOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            font: { size: 12, family: 'Arial' },
+                            padding: 15,
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            color: '#333'
+                        }
+                    },
+                    title: {
+                        padding: {
+                            bottom: 25
+                        },
+                        color: '#333',
+                        font: {
+                            size: 16,
+                            weight: 'bold',
+                            family: 'Arial'
+                        }
+                    },
+                        tooltip: {
+                            animation: {
+                                duration: 150,
+                                easing: 'easeOutQuad'
+                            },
+                            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                            titleColor: '#333',
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold',
+                                family: 'Arial'
+                            },
+                            bodySpacing: 8,
+                            bodyColor: '#666',
+                            bodyFont: {
+                                size: 13,
+                                family: 'Arial'
+                            },
+                            padding: 16,
+                            boxPadding: 8,
+                            borderColor: '#e0e0e0',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            displayColors: true,
+                            caretSize: 8,
+                            caretPadding: 6,
+                            callbacks: {
+                                title: function(items) {
+                                    return items[0].label;
+                                },
+                                label: function(context) {
+                                    const value = Math.abs(context.parsed);
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+
+                                    // Get the corresponding before/after value
+                                    const label = context.label;
+                                    const isAfterChart = context.chart.canvas.id === 'afterPieChart';
+                                    const beforeValue = beforeResults.data[beforeResults.labels.indexOf(label)];
+                                    const afterValue = afterResults.data[afterResults.labels.indexOf(label)];
+                                    
+                                    if (isAfterChart) {
+                                        const change = ((afterValue - beforeValue) / beforeValue * 100).toFixed(1);
+                                        const changeText = change > 0 ? `+${change}%` : `${change}%`;
+                                        const color = change > 0 ? '#4CAF50' : '#F44336';
+                                        return [
+                                            `数值: ${value.toFixed(2)}`,
+                                            `占比: ${percentage}%`,
+                                            `变化: ${changeText}`,
+                                        ];
+                                    } else {
+                                        return [
+                                            `数值: ${value.toFixed(2)}`,
+                                            `占比: ${percentage}%`
+                                        ];
+                                    }
+                                },
+                                labelTextColor: function(context) {
+                                    return '#666';
+                                }
+                            }
+                        }
+                }
+            };
+
+            beforePieChart = new Chart(document.getElementById('beforePieChart'), {
+                type: 'pie',
+                data: {
+                    labels: beforeResults.labels,
+                    datasets: [{
+                        data: beforeResults.data,
+                        backgroundColor: beforeResults.colors
+                    }]
+                },
+                options: {
+                    ...pieOptions,
+                    plugins: {
+                        ...pieOptions.plugins,
+                        title: {
+                            display: true,
+                            text: '改善前营运成本结构',
+                            font: { size: 16 }
+                        }
+                    }
+                }
+            });
+
+            afterPieChart = new Chart(document.getElementById('afterPieChart'), {
+                type: 'pie',
+                data: {
+                    labels: afterResults.labels,
+                    datasets: [{
+                        data: afterResults.data,
+                        backgroundColor: afterResults.colors
+                    }]
+                },
+                options: {
+                    ...pieOptions,
+                    plugins: {
+                        ...pieOptions.plugins,
+                        title: {
+                            display: true,
+                            text: '改善后营运成本结构',
+                            font: { size: 16 }
+                        }
+                    }
+                }
+            });
+
+            // 添加提交按钮动画效果
+            const submitButton = document.querySelector('.simulation-submit');
+            submitButton.classList.add('button-flash');
+            setTimeout(() => submitButton.classList.remove('button-flash'), 500);
+            
+            // 更新数据对比表格
+            updateComparisonTable();
+        }
+
+        // CSS 样式添加
+        const style = document.createElement('style');
+        style.textContent = `
+            .simulation-table-container {
+                margin-top: 20px;
+                padding: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+
+            .simulation-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+
+            .simulation-table th,
+            .simulation-table td {
+                padding: 12px;
+                text-align: left;
+                border: 1px solid #e0e0e0;
+            }
+
+            .simulation-table th {
+                background-color: var(--color-primary);
+                color: white;
+                font-weight: bold;
+            }
+
+            .simulation-table tr.positive-value {
+                background-color: rgba(0, 181, 247, 0.05);
+            }
+
+            .simulation-table tr.positive-value:hover {
+                background-color: rgba(0, 181, 247, 0.1);
+            }
+
+            .simulation-table input {
+                width: 160px;
+                padding: 8px 32px 8px 12px;
+                border: 2px solid #e0e0e0;
+                border-radius: 6px;
+                transition: all 0.3s ease;
+                font-family: 'Consolas', monospace;
+                font-size: 14px;
+                color: #333;
+                background: white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+
+            .simulation-table input:hover {
+                border-color: var(--color-tertiary);
+            }
+
+            .simulation-table input:focus {
+                outline: none;
+                border-color: var(--color-tertiary);
+                box-shadow: 0 0 0 3px rgba(0, 181, 247, 0.1);
+                background-color: white;
+            }
+
+            .simulation-table input:invalid {
+                border-color: #F44336;
+                background-color: rgba(244, 67, 54, 0.03);
+                box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+            }
+
+            .simulation-table input::placeholder {
+                color: #999;
+                font-size: 0.9em;
+                font-style: italic;
+            }
+
+            .simulation-table .input-wrapper {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+            }
+
+            .simulation-table .input-wrapper::after {
+                position: absolute;
+                right: 10px;
+                color: #666;
+                font-size: 14px;
+                pointer-events: none;
+                opacity: 0.8;
+                font-family: Arial, sans-serif;
+            }
+
+            .input-wrapper {
+                position: relative;
+                display: inline-block;
+            }
+
+            .input-wrapper::after {
+                content: '%';
+                position: absolute;
+                right: 8px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #666;
+                pointer-events: none;
+            }
+
+            .button-container {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            .simulation-submit,
+            .simulation-reset {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            .simulation-submit {
+                background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+                color: white;
+                flex: 2;
+            }
+
+            .simulation-reset {
+                background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+                color: #666;
+                flex: 1;
+            }
+
+            .simulation-submit i,
+            .simulation-reset i {
+                font-size: 16px;
+                transition: transform 0.3s ease;
+            }
+
+            .simulation-submit:hover,
+            .simulation-reset:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            }
+
+            .simulation-submit:hover i {
+                transform: rotate(180deg);
+            }
+
+            .simulation-reset:hover i {
+                transform: scale(1.2);
+            }
+
+            .simulation-submit:active,
+            .simulation-reset:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            .button-container {
+                display: flex;
+                gap: 15px;
+                margin: 30px 0;
+                padding: 0 15px;
+            }
+
+            .pie-charts-container {
+                display: flex;
+                gap: 20px;
+                margin-top: 20px;
+                height: 400px;
+            }
+
+            .data-comparison-section {
+                margin-top: 30px;
+                padding: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+
+            .comparison-title {
+                color: var(--color-primary);
+                margin: 0 0 20px 0;
+                font-size: 18px;
+            }
+
+            .pie-charts-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+                gap: 30px;
+                margin: 30px 0;
+                min-height: 450px;
+                align-items: stretch;
+            }
+
+            @media (max-width: 900px) {
+                .pie-charts-container {
+                    grid-template-columns: 1fr;
+                    gap: 20px;
+                }
+            }
+
+            .pie-chart-wrapper {
+                background: white;
+                border-radius: 12px;
+                padding: 25px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                display: flex;
+                flex-direction: column;
+                transition: all 0.3s ease;
+            }
+
+            .pie-chart-wrapper:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            }
+
+            .pie-chart-wrapper canvas {
+                flex: 1;
+                width: 100% !important;
+                height: auto !important;
+                min-height: 350px;
+                max-height: 450px;
+            }
+
+            @keyframes button-flash {
+                0% { background-color: var(--color-primary); }
+                50% { background-color: var(--color-secondary); }
+                100% { background-color: var(--color-primary); }
+            }
+
+            .button-flash {
+                animation: button-flash 0.5s ease;
+            }
+
+            .simulation-table td[class^="base-value"],
+            .simulation-table td[class^="simulation-result"],
+            .comparison-table td[class^="value"],
+            .comparison-table td[class^="percentage"] {
+                font-family: 'Consolas', monospace;
+                text-align: right;
+            }
+
+            .comparison-table {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+                margin-top: 20px;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .comparison-table th,
+            .comparison-table td {
+                padding: 14px;
+                border-bottom: 1px solid #e0e0e0;
+                border-right: 1px solid #e0e0e0;
+                position: relative;
+            }
+
+            .comparison-table th {
+                background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+                color: white;
+                font-weight: bold;
+                white-space: nowrap;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            }
+
+            .comparison-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            .comparison-table td:last-child,
+            .comparison-table th:last-child {
+                border-right: none;
+            }
+
+            .comparison-table td.value {
+                text-align: right;
+                font-family: 'Consolas', monospace;
+                font-size: 14px;
+                color: #333;
+            }
+
+            .comparison-table td.percentage {
+                text-align: right;
+                font-family: 'Consolas', monospace;
+                font-size: 14px;
+                transition: all 0.3s ease;
+                position: relative;
+            }
+
+            .comparison-table td.percentage[data-change^="+"] {
+                color: #4CAF50;
+                animation: highlight-positive 0.5s ease;
+            }
+
+            .comparison-table td.percentage[data-change^="+"]::before {
+                content: "▲";
+                position: absolute;
+                left: 4px;
+                color: #4CAF50;
+            }
+
+            .comparison-table td.percentage[data-change^="-"] {
+                color: #F44336;
+                animation: highlight-negative 0.5s ease;
+            }
+
+            .comparison-table td.percentage[data-change^="-"]::before {
+                content: "▼";
+                position: absolute;
+                left: 4px;
+                color: #F44336;
+            }
+
+            @keyframes highlight-positive {
+                0% { background-color: rgba(76, 175, 80, 0.2); }
+                100% { background-color: transparent; }
+            }
+
+            @keyframes highlight-negative {
+                0% { background-color: rgba(244, 67, 54, 0.2); }
+                100% { background-color: transparent; }
+            }
+
+            .comparison-table tr:hover {
+                background-color: rgba(0, 181, 247, 0.05);
+            }
+
+            .comparison-table tr {
+                transition: all 0.3s ease;
+            }
+
+            .comparison-table tr:nth-child(even) {
+                background-color: #f8f9fa;
+            }
+
+            .comparison-table tr:last-child td:first-child {
+                border-bottom-left-radius: 8px;
+            }
+
+            .comparison-table tr:last-child td:last-child {
+                border-bottom-right-radius: 8px;
+            }
+
+            .comparison-table th:first-child {
+                border-top-left-radius: 8px;
+            }
+
+            .comparison-table th:last-child {
+                border-top-right-radius: 8px;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 初始化
+        document.getElementById('tree-container').appendChild(createTreeNode(treeData));
+        
+        // 添加模块4到页面
+        const simulationSection = document.createElement('div');
+        simulationSection.className = 'section';
+        simulationSection.innerHTML = `
+            <h2 class="section-title">
+                <i class="fas fa-calculator"></i>
+                模块4：改善效果模拟
+            </h2>
+            <p class="section-connection">
+                基于模块2的数据进行改善模拟，通过调整各项指标的改善百分比，直观展示改善效果
+            </p>
+        `;
+        simulationSection.appendChild(createSimulationTable());
+        document.querySelector('.container').appendChild(simulationSection);
+
+        // 初始化饼图
+        updateCharts();
+    </script>
 </body>
 </html>
