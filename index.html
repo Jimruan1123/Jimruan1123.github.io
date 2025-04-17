@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENNOVI 财务 PNL 可视化</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>ENNOVI 财务 PNL 可视化</h1>
+        <div id="logo-watermark"></div>
+    </header>
+
+    <main>
+        <section id="cost-structure">
+            <h2>PNL 成本结构分析</h2>
+            <p><strong>总成本</strong>：公司生产和运营的总支出。</p>
+            <p><strong>固定成本</strong>：不随生产量变化的成本，如折旧和间接人工。</p>
+            <p><strong>变动成本</strong>：随生产量变化的成本，如原材料和直接人工。</p>
+            <!-- 树状图 -->
+        </section>
+
+        <section id="expense-waterfall">
+            <h2>费用增减关系瀑布图</h2>
+            <p><strong>总收入</strong>：公司销售产品和提供服务的总收入。</p>
+            <p><strong>COS (Cost of Sales)</strong>：销售成本，直接生产成本（不含异常损耗）。</p>
+            <p><strong>GMM (Gross Manufacturing Margin)</strong>：总边际贡献，= 总收入 - COS + 废料收入。</p>
+            <p><strong>COPA (Cost of Production Adjusted)</strong>：调整后毛利，= GMM - 包装 - 外包成本。</p>
+            <canvas id="waterfallChart" width="400" height="200"></canvas>
+        </section>
+
+        <section id="factor-dashboard">
+            <h2>关键成本科目因子分析仪表盘</h2>
+            <p><strong>直接人工</strong>：直接参与产品生产的工人的工资和福利。</p>
+            <p><strong>原材料成本</strong>：产品生产过程中使用的原材料的成本。</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>成本科目</th>
+                        <th>主要驱动因子</th>
+                        <th>行业基准对比</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>直接人工</td>
+                        <td>工时利用率/自动化水平</td>
+                        <td>▲优于同行20%</td>
+                    </tr>
+                    <tr>
+                        <td>原材料成本</td>
+                        <td>钢材价格指数/废品率</td>
+                        <td>▼高同行5%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 ENNOVI</p>
+    </footer>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
