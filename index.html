@@ -312,6 +312,11 @@
             font-weight: bold;
             border: 2px solid #333;
         }
+        
+        .level-1 .toggle-btn {
+            color: white;
+            border-color: white;
+        }
 
         .node-text {
             flex: 1;
@@ -951,13 +956,36 @@
                 plugins: {
                     title: {
                         display: true,
-                        text: '2024财年PNL瀑布图分析',
+                            text: '202X财年PNL瀑布图分析',
                         font: {
                             size: 16
                         }
                     },
                     legend: {
                         display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            font: function(context) {
+                                const label = waterfallData.labels[context.index];
+                                const isKeyLabel = [
+                                    '总收入 (Revenue)',
+                                    '总边际贡献 (GMM)',
+                                    'COPA',
+                                    '毛利 (GP)',
+                                    '营业利润 (Operating Income)',
+                                    '合并EBITDA'
+                                ].some(key => label.includes(key));
+                                
+                                return {
+                                    weight: isKeyLabel ? 'bold' : 'normal',
+                                    size: isKeyLabel ? 13 : 12,
+                                    color: waterfallData.datasets[0].backgroundColor[context.index]
+                                };
+                            }
+                        }
                     }
                 }
             }
@@ -1390,24 +1418,83 @@
                 const nonEditableItems = ['GMM', 'COPA', 'GP', '营业利润', 'EBITDA'];
                 const isNonEditable = nonEditableItems.some(item => label.includes(item));
 
-                if (isNonEditable) {
-                    // 对于不可编辑项，创建显示百分比的span
-                    const percentageSpan = document.createElement('span');
-                    percentageSpan.className = 'percentage-display';
-                    percentageSpan.textContent = '0.00%';
-                    inputWrapper.appendChild(percentageSpan);
-                } else {
-                    // 对于可编辑项，创建输入框
-                    const input = document.createElement('input');
-                    input.type = 'number';
-                    input.min = '0';
-                    input.step = '0.1';
-                    input.placeholder = `建议不超过 ${simulationData.maxPercentages[index]}%`;
-                    input.dataset.index = index;
-                    input.style.color = '#666';
-                    input.addEventListener('input', updateSimulationResults);
-                    inputWrapper.appendChild(input);
-                }
+                    if (isNonEditable) {
+                        // 对于不可编辑项，创建图标和显示百分比的容器
+                        const indicatorWrapper = document.createElement('div');
+                        indicatorWrapper.className = 'indicator-wrapper';
+                        
+                        // 设置对应的指标标识
+                        let indicator = '';
+                        if (label.includes('GMM')) {
+                            indicator = 'GMM';
+                        } else if (label.includes('COPA')) {
+                            indicator = 'COPA';
+                        } else if (label.includes('GP')) {
+                            indicator = 'GP';
+                        } else if (label.includes('营业利润')) {
+                            indicator = 'operating-income';
+                        } else if (label.includes('EBITDA')) {
+                            indicator = 'EBITDA';
+                        }
+                        indicatorWrapper.setAttribute('data-indicator', indicator);
+                        
+                        // 添加对应指标的图标
+                        const icon = document.createElement('i');
+                        if (label.includes('GMM')) {
+                            icon.className = 'fas fa-chart-line';
+                        } else if (label.includes('COPA')) {
+                            icon.className = 'fas fa-industry';
+                        } else if (label.includes('GP')) {
+                            icon.className = 'fas fa-dollar-sign';
+                        } else if (label.includes('营业利润')) {
+                            icon.className = 'fas fa-chart-bar';
+                        } else if (label.includes('EBITDA')) {
+                            icon.className = 'fas fa-chart-pie';
+                        }
+                        
+                        const percentageSpan = document.createElement('span');
+                        percentageSpan.className = 'percentage-display';
+                        percentageSpan.textContent = '0.00%';
+                        
+                        indicatorWrapper.appendChild(icon);
+                        indicatorWrapper.appendChild(percentageSpan);
+                        inputWrapper.appendChild(indicatorWrapper);
+                    } else {
+                        // 对于可编辑项，创建输入框和滑动条
+                        const sliderContainer = document.createElement('div');
+                        sliderContainer.className = 'slider-container';
+                        
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.min = '-100';
+                        input.max = '100';
+                        input.step = '0.1';
+                        input.placeholder = `建议不超过 ${simulationData.maxPercentages[index]}%`;
+                        input.dataset.index = index;
+                        input.style.color = '#666';
+                        input.addEventListener('input', function() {
+                            updateSimulationResults({target: this});
+                            const slider = this.nextElementSibling;
+                            slider.value = this.value;
+                        });
+                        
+                        const slider = document.createElement('input');
+                        slider.type = 'range';
+                        slider.min = '-100';
+                        slider.max = '100';
+                        slider.step = '0.1';
+                        slider.value = '0';
+                        slider.dataset.index = index;
+                        slider.addEventListener('input', function() {
+                            const input = this.previousElementSibling;
+                            input.value = this.value;
+                            updateSimulationResults({target: input});
+                        });
+                        
+                        sliderContainer.appendChild(input);
+                        sliderContainer.appendChild(slider);
+                        inputWrapper.appendChild(sliderContainer);
+                    }
                 inputCell.appendChild(inputWrapper);
                 tr.appendChild(inputCell);
 
@@ -1526,14 +1613,8 @@
                     return true;
                 }
                 
-                if (value < 0) {
-                    input.setCustomValidity('改善百分比不能为负数');
-                    input.classList.remove('exceeds-suggestion');
-                    return false;
-                }
-                
-                // Remove strict validation, just show warning styling if exceeds suggestion
-                if (value > suggestedMax) {
+                // 检查是否超出建议范围
+                if (Math.abs(value) > suggestedMax) {
                     input.classList.add('exceeds-suggestion');
                 } else {
                     input.classList.remove('exceeds-suggestion');
@@ -2024,9 +2105,10 @@
 
             .simulation-table th,
             .simulation-table td {
-                padding: 12px;
+                padding: 8px 12px;
                 text-align: left;
                 border: 1px solid #e0e0e0;
+                line-height: 1.3;
             }
 
             .simulation-table th {
@@ -2098,6 +2180,113 @@
             .input-wrapper {
                 position: relative;
                 display: inline-block;
+            }
+
+            .slider-container {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                width: 100%;
+                border: none;
+                background: transparent;
+                padding: 0;
+                margin: 0;
+            }
+
+            .slider-container input[type="number"] {
+                width: 120px;
+                padding: 4px 8px;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                font-family: 'Consolas', monospace;
+                text-align: center;
+                min-width: 120px;
+                height: 26px;
+                font-size: 13px;
+            }
+
+            .indicator-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 4px 8px;
+                border-radius: 4px;
+            }
+
+            .indicator-wrapper i {
+                color: var(--color-primary);
+                font-size: 14px;
+                width: 20px;
+                text-align: center;
+            }
+
+            .indicator-wrapper .percentage-display {
+                font-family: 'Consolas', monospace;
+                padding: 4px 8px;
+                border: 1px solid transparent;
+                border-radius: 4px;
+                background-color: #f8f9fa;
+                text-align: right;
+                min-width: 80px;
+            }
+
+            /* 为不同指标设置特定图标颜色 */
+            .indicator-wrapper[data-indicator="GMM"] i { color: var(--color-tertiary); }
+            .indicator-wrapper[data-indicator="COPA"] i { color: var(--color-senary); }
+            .indicator-wrapper[data-indicator="GP"] i { color: var(--color-secondary); }
+            .indicator-wrapper[data-indicator="operating-income"] i { color: var(--color-septenary); }
+            .indicator-wrapper[data-indicator="EBITDA"] i { color: var(--color-octonary); }
+
+            .slider-container input[type="range"] {
+                flex: 1;
+                height: 2px;
+                -webkit-appearance: none;
+                background: transparent;
+                outline: none;
+                padding: 0;
+                margin: 0 8px;
+            }
+
+            .slider-container input[type="range"]::-webkit-slider-runnable-track {
+                height: 1px;
+                background: #000;
+                border: none;
+                border-radius: 0;
+            }
+
+            .slider-container input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: var(--color-primary);
+                cursor: pointer;
+                margin-top: -5.5px;
+                position: relative;
+                z-index: 1;
+                border: 1px solid white;
+                box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
+                transition: transform 0.2s ease;
+            }
+
+            .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+                transform: scale(1.2);
+            }
+
+            .slider-container input[type="range"]::-moz-range-track {
+                height: 2px;
+                background: #000;
+                border-radius: 0;
+            }
+
+            .slider-container input[type="range"]::-moz-range-thumb {
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: var(--color-primary);
+                cursor: pointer;
+                border: 2px solid white;
+                box-shadow: 0 0 0 1px #000;
             }
 
             .input-wrapper::after {
